@@ -20,12 +20,13 @@ module.exports = {
     {
       name: "ghostops-frontend",
       cwd: "/workspace/ghostops-web/frontend",
-      script: "node_modules/.bin/next",
-      args: "start -p 3000",
+      script: ".next/standalone/server.js",
+      interpreter: "node",
       watch: false,
       env: {
         NODE_ENV: "production",
-        PORT: "3000",
+        PORT: "3001",
+        HOSTNAME: "0.0.0.0",
       },
       error_file: "/workspace/ghostops-web/logs/frontend-error.log",
       out_file: "/workspace/ghostops-web/logs/frontend-out.log",
@@ -34,7 +35,7 @@ module.exports = {
       max_restarts: 10,
       restart_delay: 5000,
       kill_timeout: 8000,
-      listen_timeout: 15000,
+      treekill: true,
     },
   ],
 };
