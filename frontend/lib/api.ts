@@ -81,6 +81,35 @@ export interface PipelineDone {
   bio_updated: boolean;
 }
 
+export interface UserProxy {
+  id: number;
+  owner_id: number;
+  proxy_url: string;
+  label: string;
+  status: "active" | "dead";
+  fails: number;
+  added_at: string;
+}
+
+export interface ProxyStats {
+  total: number;
+  active: number;
+  dead: number;
+}
+
+export interface ProxyExample {
+  name: string;
+  url: string | null;
+  format: string;
+}
+
+export interface ProxyExamplesResponse {
+  format: string;
+  note: string;
+  examples: string[];
+  providers: ProxyExample[];
+}
+
 // ─────────────────────────────────────────────
 // AUTH
 // ─────────────────────────────────────────────
@@ -129,6 +158,35 @@ export const igAPI = {
 
   getAccount: (id: number) =>
     apiFetch<IGAccount>(`/api/instagram/accounts/${id}`),
+};
+
+// ─────────────────────────────────────────────
+// PROXY MANAGEMENT
+// ─────────────────────────────────────────────
+export const proxyAPI = {
+  list: () =>
+    apiFetch<{ proxies: UserProxy[]; stats: ProxyStats }>("/api/proxy"),
+
+  examples: () =>
+    apiFetch<ProxyExamplesResponse>("/api/proxy/examples"),
+
+  add: (proxy_url: string, label?: string, validate_first = true) =>
+    apiFetch<{ proxy: UserProxy; validated: boolean; alive: boolean }>("/api/proxy", {
+      method: "POST",
+      body: JSON.stringify({ proxy_url, label: label ?? "", validate_first }),
+    }),
+
+  bulkAdd: (proxies: string, validate_first = false) =>
+    apiFetch<{ submitted: number; added: number; skipped: number; validate_first: boolean }>(
+      "/api/proxy/bulk",
+      {
+        method: "POST",
+        body: JSON.stringify({ proxies, validate_first }),
+      }
+    ),
+
+  remove: (proxy_id: number) =>
+    apiFetch<{ detail: string }>(`/api/proxy/${proxy_id}`, { method: "DELETE" }),
 };
 
 // ─────────────────────────────────────────────

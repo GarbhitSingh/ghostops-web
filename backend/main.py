@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 
 from database import init_db, cleanup_expired_sessions
 from routers import auth, instagram, admin
+from routers import proxy as proxy_router
 
 load_dotenv()
 
@@ -83,9 +84,10 @@ app.add_middleware(
 # ─────────────────────────────────────────────
 # ROUTERS
 # ─────────────────────────────────────────────
-app.include_router(auth.router,      prefix="/auth",  tags=["Auth"])
-app.include_router(instagram.router, prefix="/api",   tags=["Instagram"])
-app.include_router(admin.router,     prefix="/admin", tags=["Admin"])
+app.include_router(auth.router,         prefix="/auth",       tags=["Auth"])
+app.include_router(instagram.router,    prefix="/api",        tags=["Instagram"])
+app.include_router(admin.router,        prefix="/admin",      tags=["Admin"])
+app.include_router(proxy_router.router, prefix="/api/proxy",  tags=["Proxy"])
 
 
 @app.get("/health")

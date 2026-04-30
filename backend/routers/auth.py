@@ -4,6 +4,7 @@ JWT stored as httpOnly cookie (access_token, 7-day expiry).
 """
 import os
 from datetime import datetime, timedelta
+
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Response, Request, Depends
@@ -100,12 +101,15 @@ async def login(body: UserLogin, response: Response):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     token = create_access_token(user["id"])
+    # SameSite=None + Secure is required for cross-origin (different subdomain) cookie delivery
+    # when the frontend and backend are on different Cloudflare tunnel URLs.
+    https_mode = os.getenv("HTTPS_COOKIES", "true").lower() == "true"
     response.set_cookie(
         key=COOKIE_NAME,
         value=token,
         httponly=True,
-        secure=False,       # set True in production (HTTPS)
-        samesite="lax",
+        secure=https_mode,
+        samesite="none" if https_mode else "lax",
         max_age=JWT_EXPIRE_DAYS * 86400,
         path="/",
     )

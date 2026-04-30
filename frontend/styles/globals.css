@@ -1,13 +1,13 @@
+/* ─────────────────────────────────────────────
+   GOOGLE SANS FLEX — variable font via Google Fonts
+   All @import rules must come before @tailwind directives
+   ───────────────────────────────────────────── */
 @import "./tokens.css";
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wdth,wght,ROND@8..144,75..150,100..700,0..100&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* ─────────────────────────────────────────────
-   GOOGLE SANS FLEX — variable font via Google Fonts
-   ───────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wdth,wght,ROND@8..144,75..150,100..700,0..100&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap');
 
 /* ─────────────────────────────────────────────
    BASE RESET

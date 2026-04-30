@@ -5,15 +5,25 @@ Endpoints:
   POST /api/instagram/verify   → Step 2: verify OTP + run pipeline (SSE stream)
   GET  /api/instagram/accounts → List user's created accounts
   GET  /api/instagram/accounts/{id} → Single account
+
+Proxy resolution order:
+  1. User's own active proxy (user_proxies table)
+  2. Admin shared proxy pool (proxies table)
+  3. 503 — no proxy available
 """
 import json
 import asyncio
 import logging
+import os
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from database import (
+    # admin pool
     get_working_proxy, increment_proxy_fail, reset_proxy_fail,
+    # user pool
+    get_working_user_proxy, increment_user_proxy_fail, reset_user_proxy_fail,
+    # sessions / accounts
     save_ig_session, get_ig_session, delete_ig_session,
     save_ig_account, get_accounts_by_owner, get_account_by_id,
 )
@@ -37,6 +47,46 @@ def sse(event: str, data: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(data)}\n\n"
 
 
+async def resolve_proxy(user_id: int):
+    """
+    Returns (proxy_url, source) where source is 'user' or 'admin'.
+    User's own proxy takes priority; falls back to admin pool.
+    """
+    user_proxy = await get_working_user_proxy(user_id)
+    if user_proxy:
+        return user_proxy, "user"
+    admin_proxy = await get_working_proxy()
+    if admin_proxy:
+        return admin_proxy, "admin"
+    return None, None
+
+
+async def handle_proxy_fail(proxy_url: str, source: str, user_id: int):
+    if source == "user":
+        await increment_user_proxy_fail(user_id, proxy_url)
+    else:
+        await increment_proxy_fail(proxy_url)
+
+
+async def handle_proxy_success(proxy_url: str, source: str, user_id: int):
+    if source == "user":
+        await reset_user_proxy_fail(user_id, proxy_url)
+    else:
+        await reset_proxy_fail(proxy_url)
+
+
+def _sse_origin(request: Request) -> str:
+    """Return the correct Access-Control-Allow-Origin for SSE responses."""
+    origin = request.headers.get("origin", "")
+    allowed = os.getenv(
+        "ALLOWED_ORIGINS",
+        "http://localhost:3000,http://127.0.0.1:3000"
+    ).split(",")
+    if origin in allowed:
+        return origin
+    return allowed[0] if allowed else "*"
+
+
 # ─────────────────────────────────────────────
 # POST /create  — Step 1
 # ─────────────────────────────────────────────
@@ -45,11 +95,14 @@ async def instagram_create(
     body: CreateStep1Request,
     current_user: dict = Depends(get_current_user),
 ):
-    proxy = await get_working_proxy()
+    proxy, source = await resolve_proxy(current_user["id"])
     if not proxy:
         raise HTTPException(
             status_code=503,
-            detail="No active proxies available. Contact admin."
+            detail=(
+                "No active proxies available. "
+                "Add your own proxy in Dashboard → My Proxies, or contact admin."
+            )
         )
 
     async with creation_semaphore:
@@ -58,17 +111,16 @@ async def instagram_create(
             result = await ig.step_1_send_email(body.email)
         except Exception as e:
             logger.exception("Step 1 unhandled exception")
-            await increment_proxy_fail(proxy)
+            await handle_proxy_fail(proxy, source, current_user["id"])
             raise HTTPException(status_code=500, detail=str(e))
 
     if not result["status"]:
-        # Only penalise proxy for network/ban errors, not logic errors
         msg = result.get("msg", "")
         if any(kw in msg.lower() for kw in ["proxy", "banned", "connection"]):
-            await increment_proxy_fail(proxy)
+            await handle_proxy_fail(proxy, source, current_user["id"])
         raise HTTPException(status_code=400, detail=msg)
 
-    await reset_proxy_fail(proxy)
+    await handle_proxy_success(proxy, source, current_user["id"])
 
     # Serialise session state to DB (15-min TTL)
     context_json = json.dumps({
@@ -77,6 +129,8 @@ async def instagram_create(
         "enc_password": result["enc_password"],
         "cookies": result["cookies"],
         "jazoest": result["jazoest"],
+        "proxy": proxy,
+        "proxy_source": source,
     })
     session_id = await save_ig_session(
         owner_id=current_user["id"],
@@ -84,7 +138,11 @@ async def instagram_create(
         context_json=context_json,
     )
 
-    return {"session_id": session_id, "email": body.email}
+    return {
+        "session_id": session_id,
+        "email": body.email,
+        "proxy_source": source,   # 'user' or 'admin' — informational
+    }
 
 
 # ─────────────────────────────────────────────
@@ -106,9 +164,19 @@ async def instagram_verify(
         context_data = json.loads(ctx["context_json"])
         email = ctx["email"]
 
-        proxy = await get_working_proxy()
+        # Re-use the same proxy + source that was used in step 1 so
+        # the session cookies remain consistent. Fall back to fresh resolution.
+        proxy = context_data.get("proxy")
+        source = context_data.get("proxy_source", "admin")
         if not proxy:
-            yield sse("error", {"msg": "No active proxies available. Contact admin."})
+            proxy, source = await resolve_proxy(current_user["id"])
+        if not proxy:
+            yield sse("error", {
+                "msg": (
+                    "No active proxies available. "
+                    "Add your own proxy in Dashboard → My Proxies, or contact admin."
+                )
+            })
             return
 
         ig = InstagramSession(proxy)
@@ -133,8 +201,7 @@ async def instagram_verify(
                     "msg": f"Connection error: {str(e)}",
                 })
                 yield sse("error", {"msg": str(e)})
-                if is_proxy_error:
-                    await increment_proxy_fail(proxy)
+                await handle_proxy_fail(proxy, source, current_user["id"])
                 return
 
             if not result["status"]:
@@ -148,7 +215,7 @@ async def instagram_verify(
                 })
                 yield sse("error", {"msg": msg})
                 if is_proxy_error:
-                    await increment_proxy_fail(proxy)
+                    await handle_proxy_fail(proxy, source, current_user["id"])
                 return
 
             yield sse("step", {
@@ -157,7 +224,7 @@ async def instagram_verify(
                 "msg": "✅ OTP Verified",
             })
 
-            await reset_proxy_fail(proxy)
+            await handle_proxy_success(proxy, source, current_user["id"])
 
             # ── ACCOUNT CREATED ───────────────────────────────────────
             yield sse("step", {
@@ -231,9 +298,9 @@ async def instagram_verify(
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
-            "X-Accel-Buffering": "no",       # disable nginx buffering
+            "X-Accel-Buffering": "no",
             "Connection": "keep-alive",
-            "Access-Control-Allow-Origin": "http://localhost:3000",
+            "Access-Control-Allow-Origin": _sse_origin(request),
             "Access-Control-Allow-Credentials": "true",
         },
     )

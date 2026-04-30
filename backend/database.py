@@ -55,7 +55,7 @@ async def init_db():
             )
         """)
 
-        # ── Proxy pool (from original ghostops code — kept verbatim) ──
+        # ── Admin proxy pool ──
         await db.execute("""
             CREATE TABLE IF NOT EXISTS proxies (
                 proxy_url    TEXT PRIMARY KEY,
@@ -66,6 +66,23 @@ async def init_db():
         """)
         await db.execute(
             "CREATE INDEX IF NOT EXISTS idx_proxies_active ON proxies(status, fails)"
+        )
+
+        # ── Per-user proxy pool (each user can add their own proxies) ──
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS user_proxies (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                owner_id   INTEGER NOT NULL REFERENCES users_site(id),
+                proxy_url  TEXT    NOT NULL,
+                label      TEXT    DEFAULT '',
+                status     TEXT    NOT NULL DEFAULT 'active',
+                fails      INTEGER NOT NULL DEFAULT 0,
+                added_at   TEXT    NOT NULL,
+                UNIQUE(owner_id, proxy_url)
+            )
+        """)
+        await db.execute(
+            "CREATE INDEX IF NOT EXISTS idx_user_proxies_active ON user_proxies(owner_id, status, fails)"
         )
 
         await db.commit()
@@ -267,3 +284,112 @@ async def reset_proxy_fail(proxy_url: str):
             "UPDATE proxies SET fails = 0 WHERE proxy_url = ?", (proxy_url,)
         )
         await db.commit()
+
+
+# ─────────────────────────────────────────────
+# USER PROXIES  (per-user owned proxies)
+# ─────────────────────────────────────────────
+MAX_USER_PROXY_FAILS = 3
+
+
+async def add_user_proxy(owner_id: int, proxy_url: str, label: str = "") -> Dict[str, Any]:
+    """Add or update a proxy for a specific user."""
+    async with aiosqlite.connect(DB_FILE) as db:
+        await db.execute(
+            """INSERT INTO user_proxies (owner_id, proxy_url, label, status, fails, added_at)
+               VALUES (?, ?, ?, 'active', 0, ?)
+               ON CONFLICT(owner_id, proxy_url)
+               DO UPDATE SET label=excluded.label, status='active', fails=0, added_at=excluded.added_at""",
+            (owner_id, proxy_url, label, datetime.utcnow().isoformat())
+        )
+        await db.commit()
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT * FROM user_proxies WHERE owner_id=? AND proxy_url=?",
+            (owner_id, proxy_url)
+        ) as cursor:
+            row = await cursor.fetchone()
+    return dict(row) if row else {}
+
+
+async def get_user_proxies(owner_id: int) -> List[Dict[str, Any]]:
+    """List all proxies belonging to a user."""
+    async with aiosqlite.connect(DB_FILE) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT * FROM user_proxies WHERE owner_id=? ORDER BY added_at DESC",
+            (owner_id,)
+        ) as cursor:
+            rows = await cursor.fetchall()
+    return [dict(r) for r in rows]
+
+
+async def delete_user_proxy(owner_id: int, proxy_id: int) -> bool:
+    """Delete a user-owned proxy. Returns True if deleted."""
+    async with aiosqlite.connect(DB_FILE) as db:
+        cursor = await db.execute(
+            "DELETE FROM user_proxies WHERE id=? AND owner_id=?",
+            (proxy_id, owner_id)
+        )
+        await db.commit()
+    return cursor.rowcount > 0
+
+
+async def get_working_user_proxy(owner_id: int) -> Optional[str]:
+    """Return the best active proxy for a specific user."""
+    async with aiosqlite.connect(DB_FILE) as db:
+        async with db.execute(
+            """SELECT proxy_url FROM user_proxies
+               WHERE owner_id=? AND status='active'
+               ORDER BY fails ASC, RANDOM() LIMIT 1""",
+            (owner_id,)
+        ) as cursor:
+            row = await cursor.fetchone()
+    return row[0] if row else None
+
+
+async def increment_user_proxy_fail(owner_id: int, proxy_url: str):
+    async with aiosqlite.connect(DB_FILE) as db:
+        await db.execute(
+            "UPDATE user_proxies SET fails = fails + 1 WHERE owner_id=? AND proxy_url=?",
+            (owner_id, proxy_url)
+        )
+        async with db.execute(
+            "SELECT fails FROM user_proxies WHERE owner_id=? AND proxy_url=?",
+            (owner_id, proxy_url)
+        ) as cursor:
+            result = await cursor.fetchone()
+            fails = result[0] if result else 0
+        if fails >= MAX_USER_PROXY_FAILS:
+            await db.execute(
+                "UPDATE user_proxies SET status='dead' WHERE owner_id=? AND proxy_url=?",
+                (owner_id, proxy_url)
+            )
+        await db.commit()
+
+
+async def reset_user_proxy_fail(owner_id: int, proxy_url: str):
+    async with aiosqlite.connect(DB_FILE) as db:
+        await db.execute(
+            "UPDATE user_proxies SET fails=0 WHERE owner_id=? AND proxy_url=?",
+            (owner_id, proxy_url)
+        )
+        await db.commit()
+
+
+async def get_user_proxy_stats(owner_id: int) -> Tuple[int, int, int]:
+    """Return (total, active, dead) proxy counts for a user."""
+    async with aiosqlite.connect(DB_FILE) as db:
+        async with db.execute(
+            "SELECT COUNT(*) FROM user_proxies WHERE owner_id=?", (owner_id,)
+        ) as c:
+            total = (await c.fetchone())[0]
+        async with db.execute(
+            "SELECT COUNT(*) FROM user_proxies WHERE owner_id=? AND status='active'", (owner_id,)
+        ) as c:
+            active = (await c.fetchone())[0]
+        async with db.execute(
+            "SELECT COUNT(*) FROM user_proxies WHERE owner_id=? AND status='dead'", (owner_id,)
+        ) as c:
+            dead = (await c.fetchone())[0]
+    return total, active, dead
