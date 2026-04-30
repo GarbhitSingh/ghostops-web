@@ -3,6 +3,7 @@ uvicorn[standard]==0.32.1
 python-multipart==0.0.12
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+bcrypt>=4.0.1,<5.0  # passlib 1.7.4 is incompatible with bcrypt 5.x — startup probe fails
 aiosqlite==0.20.0
 curl_cffi==0.7.4
 rsa==4.9

@@ -101,15 +101,17 @@ async def login(body: UserLogin, response: Response):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     token = create_access_token(user["id"])
-    # SameSite=None + Secure is required for cross-origin (different subdomain) cookie delivery
-    # when the frontend and backend are on different Cloudflare tunnel URLs.
-    https_mode = os.getenv("HTTPS_COOKIES", "true").lower() == "true"
+    # Cookie is set on the same origin as the frontend (Next.js rewrites proxy
+    # /auth, /api, /admin to FastAPI). SameSite=Lax + Secure is the right default
+    # for first-party cookies behind an HTTPS tunnel.
+    secure_cookie = os.getenv("HTTPS_COOKIES", "true").lower() == "true"
+    samesite_value = os.getenv("COOKIE_SAMESITE", "lax").lower()
     response.set_cookie(
         key=COOKIE_NAME,
         value=token,
         httponly=True,
-        secure=https_mode,
-        samesite="none" if https_mode else "lax",
+        secure=secure_cookie,
+        samesite=samesite_value,
         max_age=JWT_EXPIRE_DAYS * 86400,
         path="/",
     )
