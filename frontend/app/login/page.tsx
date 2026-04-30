@@ -37,47 +37,99 @@ export default function LoginPage() {
         justifyContent: "center",
         background: "var(--color-bg)",
         padding: "var(--sp-6)",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
-      {/* Glow */}
-      <div
-        style={{
-          position: "fixed",
-          top: 0, left: "50%",
-          transform: "translateX(-50%)",
-          width: "600px", height: "400px",
-          background: "radial-gradient(ellipse, rgba(50,121,249,0.08), transparent 70%)",
-          pointerEvents: "none",
-        }}
-      />
+      {/* Multi-color glow orbs */}
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none" }}>
+        <div style={{
+          position: "absolute", top: "-10%", left: "50%", transform: "translateX(-50%)",
+          width: 700, height: 500,
+          background: "radial-gradient(ellipse, rgba(66,133,244,0.09) 0%, transparent 65%)",
+        }} />
+        <div style={{
+          position: "absolute", bottom: "-10%", left: "20%",
+          width: 400, height: 300,
+          background: "radial-gradient(ellipse, rgba(52,168,83,0.04) 0%, transparent 60%)",
+        }} />
+        <div style={{
+          position: "absolute", top: "30%", right: "10%",
+          width: 300, height: 200,
+          background: "radial-gradient(ellipse, rgba(234,67,53,0.04) 0%, transparent 60%)",
+        }} />
+        {/* Grid */}
+        <div style={{
+          position: "absolute", inset: 0,
+          backgroundImage: `
+            linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px)
+          `,
+          backgroundSize: "60px 60px",
+          maskImage: "radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 100%)",
+        }} />
+      </div>
 
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 28 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0, 0, 0.2, 1] }}
-        style={{ width: "100%", maxWidth: 400 }}
+        transition={{ duration: 0.45, ease: [0, 0, 0.2, 1] }}
+        style={{ width: "100%", maxWidth: 420, position: "relative", zIndex: 1 }}
       >
         {/* Logo */}
-        <div style={{ textAlign: "center", marginBottom: "var(--sp-8)" }}>
-          <div style={{ fontSize: 40, marginBottom: "var(--sp-3)" }}>👻</div>
+        <div style={{ textAlign: "center", marginBottom: "var(--sp-10)" }}>
+          <Link href="/" style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: "var(--sp-3)", textDecoration: "none" }}>
+            <div
+              style={{
+                width: 56, height: 56,
+                borderRadius: "var(--radius-lg)",
+                background: "rgba(66,133,244,0.1)",
+                border: "1px solid rgba(66,133,244,0.2)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 28,
+              }}
+            >
+              👻
+            </div>
+            <span
+              style={{
+                fontSize: "var(--text-sm)",
+                color: "var(--color-text-muted)",
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                fontWeight: 600,
+              }}
+            >
+              GhostOps
+            </span>
+          </Link>
+
           <h1
             style={{
-              fontSize: "var(--text-2xl)",
+              marginTop: "var(--sp-5)",
+              fontSize: "var(--text-3xl)",
               fontWeight: 700,
-              letterSpacing: "-0.025em",
+              letterSpacing: "-0.03em",
               fontVariationSettings: "'wdth' 100, 'wght' 700",
+              color: "var(--color-text-primary)",
             }}
           >
             Welcome back
           </h1>
-          <p style={{ marginTop: "var(--sp-2)", fontSize: "var(--text-sm)" }}>
+          <p style={{ marginTop: "var(--sp-2)", fontSize: "var(--text-sm)", color: "var(--color-text-secondary)" }}>
             Sign in to your GhostOps account
           </p>
         </div>
 
         {/* Card */}
-        <div className="card" style={{ padding: "var(--sp-8)" }}>
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "var(--sp-4)" }}>
+        <div
+          className="card-glass"
+          style={{ padding: "var(--sp-8)", boxShadow: "var(--shadow-lg)" }}
+        >
+          <form
+            onSubmit={handleSubmit}
+            style={{ display: "flex", flexDirection: "column", gap: "var(--sp-5)" }}
+          >
             <div>
               <label
                 style={{
@@ -131,13 +183,13 @@ export default function LoginPage() {
                 style={{
                   padding: "var(--sp-3) var(--sp-4)",
                   background: "var(--color-error-dim)",
-                  border: "1px solid var(--color-error)",
+                  border: "1px solid rgba(248,113,113,0.3)",
                   borderRadius: "var(--radius-md)",
                   color: "var(--color-error)",
                   fontSize: "var(--text-sm)",
                 }}
               >
-                {error}
+                ⚠️ {error}
               </motion.div>
             )}
 
@@ -145,12 +197,12 @@ export default function LoginPage() {
               type="submit"
               className="btn btn-primary btn-lg"
               disabled={loading}
-              style={{ width: "100%", marginTop: "var(--sp-2)" }}
+              style={{ width: "100%", marginTop: "var(--sp-1)" }}
             >
               {loading ? (
                 <><span className="spinner" style={{ borderTopColor: "#fff" }} /> Signing in...</>
               ) : (
-                "Sign In"
+                "Sign In →"
               )}
             </button>
           </form>
@@ -165,7 +217,7 @@ export default function LoginPage() {
           }}
         >
           Don't have an account?{" "}
-          <Link href="/register" style={{ color: "var(--color-accent)" }}>
+          <Link href="/register" style={{ color: "var(--color-accent)", fontWeight: 500 }}>
             Create one
           </Link>
         </p>

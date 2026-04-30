@@ -19,21 +19,52 @@ export default function LandingPage() {
           background: "var(--color-bg)",
           textAlign: "center",
           borderTop: "1px solid var(--color-border)",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        <div className="page-container">
-          <div style={{ fontSize: 48, marginBottom: "var(--sp-6)" }}>👻</div>
+        {/* Glow */}
+        <div
+          style={{
+            position: "absolute",
+            top: "0%", left: "50%",
+            transform: "translateX(-50%)",
+            width: 700, height: 400,
+            background: "radial-gradient(ellipse, rgba(66,133,244,0.08) 0%, transparent 65%)",
+            pointerEvents: "none",
+          }}
+        />
+
+        <div className="page-container" style={{ position: "relative", zIndex: 1 }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "var(--sp-2)",
+              padding: "var(--sp-2) var(--sp-4)",
+              background: "rgba(66,133,244,0.08)",
+              border: "1px solid rgba(66,133,244,0.2)",
+              borderRadius: "var(--radius-pill)",
+              fontSize: "var(--text-sm)",
+              color: "var(--color-accent)",
+              fontWeight: 600,
+              marginBottom: "var(--sp-8)",
+            }}
+          >
+            👻 GhostOps
+          </div>
           <h2
             className="text-display"
-            style={{ marginBottom: "var(--sp-4)", maxWidth: 540, margin: "0 auto var(--sp-4)" }}
+            style={{ marginBottom: "var(--sp-5)", maxWidth: 580, margin: "0 auto var(--sp-5)" }}
           >
             Ready to go ghost?
           </h2>
           <p
             style={{
               fontSize: "var(--text-lg)",
-              maxWidth: 460,
+              maxWidth: 480,
               margin: "0 auto var(--sp-10)",
+              color: "var(--color-text-secondary)",
             }}
           >
             Join GhostOps and automate Instagram account creation with stealth-grade infrastructure.
@@ -42,7 +73,7 @@ export default function LandingPage() {
             <Link href="/register" className="btn btn-primary btn-lg">
               Create free account →
             </Link>
-            <Link href="/login" className="btn btn-secondary btn-lg">
+            <Link href="/login" className="btn btn-outline btn-lg">
               Sign in
             </Link>
           </div>
@@ -74,6 +105,7 @@ export default function LandingPage() {
                 fontWeight: 700,
                 color: "var(--color-text-secondary)",
                 fontSize: "var(--text-sm)",
+                fontVariationSettings: "'wdth' 100, 'wght' 700",
               }}
             >
               GhostOps
@@ -82,8 +114,13 @@ export default function LandingPage() {
           <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)" }}>
             © {new Date().getFullYear()} GhostOps. Stealth IG automation.
           </p>
-          <div style={{ display: "flex", gap: "var(--sp-4)" }}>
-            {["#features", "#how-it-works", "/login", "/register"].map((href) => (
+          <div style={{ display: "flex", gap: "var(--sp-5)" }}>
+            {[
+              { label: "Features", href: "#features" },
+              { label: "How it works", href: "#how-it-works" },
+              { label: "Login", href: "/login" },
+              { label: "Register", href: "/register" },
+            ].map(({ label, href }) => (
               <Link
                 key={href}
                 href={href}
@@ -91,9 +128,10 @@ export default function LandingPage() {
                   fontSize: "var(--text-xs)",
                   color: "var(--color-text-muted)",
                   textDecoration: "none",
+                  transition: "color 0.15s ease",
                 }}
               >
-                {href.replace("#", "").replace("/", "").replace("-", " ")}
+                {label}
               </Link>
             ))}
           </div>
