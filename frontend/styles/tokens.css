@@ -1,0 +1,118 @@
+/*
+ * GhostOps Design Token System
+ * Inspired by antigravity.google — dark-first, Google Sans Flex variable font
+ * All values referenced via CSS custom properties — no hardcoded colours elsewhere.
+ */
+
+:root {
+  /* ── COLOUR: Backgrounds ──────────────────────────────────── */
+  --color-bg:         #121317;   /* page background — exact match to antigravity.google */
+  --color-surface:    #1a1d24;   /* card/panel surface */
+  --color-surface-2:  #21252f;   /* elevated card, hover state */
+  --color-surface-3:  #2a2f3d;   /* deepest elevated surface */
+  --color-border:     rgba(255, 255, 255, 0.06);
+  --color-border-md:  rgba(255, 255, 255, 0.10);
+
+  /* ── COLOUR: Text ─────────────────────────────────────────── */
+  --color-text-primary:   #f0f2f7;
+  --color-text-secondary: #8b92a5;
+  --color-text-muted:     #4a5264;
+  --color-text-inverse:   #121317;
+
+  /* ── COLOUR: Accent (CTAs only — never decorative) ─────────── */
+  --color-accent:           #3279F9;
+  --color-accent-hover:     #4a8eff;
+  --color-accent-dim:       rgba(50, 121, 249, 0.12);
+  --color-accent-dim-hover: rgba(50, 121, 249, 0.20);
+
+  /* ── COLOUR: Semantic ─────────────────────────────────────── */
+  --color-success:     #34d399;
+  --color-success-dim: rgba(52, 211, 153, 0.12);
+  --color-error:       #f87171;
+  --color-error-dim:   rgba(248, 113, 113, 0.12);
+  --color-warning:     #fbbf24;
+  --color-warning-dim: rgba(251, 191, 36, 0.12);
+
+  /* ── COLOUR: Nav specific ─────────────────────────────────── */
+  --color-nav-bg:       rgba(18, 19, 23, 0.0);
+  --color-nav-bg-pill:  rgba(18, 19, 23, 0.75);
+  --color-nav-blur:     8px;
+
+  /* ── TYPOGRAPHY ──────────────────────────────────────────── */
+  --font-sans: 'Google Sans Flex', 'Google Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+  /* Variable font axes (Google Sans Flex) */
+  --fv-weight-light:   300;
+  --fv-weight-normal:  400;
+  --fv-weight-medium:  500;
+  --fv-weight-bold:    700;
+  --fv-width-condensed: 75;
+  --fv-width-normal:   100;
+  --fv-width-expanded: 125;
+  --fv-round-off:      0;
+  --fv-round-on:       100;
+
+  /* Type scale */
+  --text-xs:   0.75rem;    /* 12px */
+  --text-sm:   0.875rem;   /* 14px */
+  --text-base: 1rem;       /* 16px */
+  --text-lg:   1.125rem;   /* 18px */
+  --text-xl:   1.25rem;    /* 20px */
+  --text-2xl:  1.5rem;     /* 24px */
+  --text-3xl:  1.875rem;   /* 30px */
+  --text-4xl:  2.25rem;    /* 36px */
+  --text-5xl:  3rem;       /* 48px */
+  --text-6xl:  3.75rem;    /* 60px */
+  --text-7xl:  4.5rem;     /* 72px */
+  --text-8xl:  6rem;       /* 96px */
+  --text-9xl:  8rem;       /* 128px */
+
+  /* ── SPACING (8px base) ──────────────────────────────────── */
+  --sp-1:  0.25rem;   /* 4px */
+  --sp-2:  0.5rem;    /* 8px */
+  --sp-3:  0.75rem;   /* 12px */
+  --sp-4:  1rem;      /* 16px */
+  --sp-5:  1.25rem;   /* 20px */
+  --sp-6:  1.5rem;    /* 24px */
+  --sp-8:  2rem;      /* 32px */
+  --sp-10: 2.5rem;    /* 40px */
+  --sp-12: 3rem;      /* 48px */
+  --sp-16: 4rem;      /* 64px */
+  --sp-20: 5rem;      /* 80px */
+  --sp-24: 6rem;      /* 96px */
+  --sp-32: 8rem;      /* 128px */
+
+  /* ── RADIUS ──────────────────────────────────────────────── */
+  --radius-sm:   6px;
+  --radius-md:   12px;
+  --radius-lg:   20px;
+  --radius-xl:   28px;
+  --radius-pill: 9999px;
+
+  /* ── EASING CURVES ────────────────────────────────────────── */
+  --ease-spring:    cubic-bezier(0.34, 1.85, 0.64, 1);   /* springy overshoot */
+  --ease-out:       cubic-bezier(0, 0, 0.2, 1);
+  --ease-in:        cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out:    cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-expo-out:  cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-back-out:  cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ── TIMING ──────────────────────────────────────────────── */
+  --t-micro:  80ms;
+  --t-fast:   150ms;
+  --t-normal: 250ms;
+  --t-slow:   400ms;
+  --t-slower: 600ms;
+
+  /* ── LAYOUT ──────────────────────────────────────────────── */
+  --nav-height:     52px;
+  --page-max-width: 1440px;
+  --page-padding:   clamp(1rem, 4vw, 4rem);
+
+  /* ── SHADOWS ─────────────────────────────────────────────── */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,0.6);
+  --shadow-glow: 0 0 40px rgba(50, 121, 249, 0.15);
+}
