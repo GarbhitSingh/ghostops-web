@@ -4,8 +4,9 @@
  * credentials: 'include' is required on every call for httpOnly cookie auth.
  */
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Default to relative URLs ("") so calls hit the same origin and Next.js
+// rewrites proxy them to the backend. Override only for split-deploy setups.
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 // ─────────────────────────────────────────────
 // BASE FETCH
